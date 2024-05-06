@@ -31,7 +31,7 @@ for (( i=$start; i<=$end; i+=$step ))
 do
     echo "Running  program with parameter: $i"
     > "$output_file"
-    sudo BLOCK=/dev/loop0 THREADS=4 DATASIZE=$i RNDREAD=1 ./vmcache >> "$output_file"
+    sudo BLOCK=/dev/loop0 THREADS=4 DATASIZE=$i ./vmcache >> "$output_file"
     python test_analysis.py "$output_file" "$result_file"
 done
 
