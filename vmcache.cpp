@@ -26,6 +26,9 @@
 #include "exmap.h"
 #include <condition_variable>
 
+#include <linux/futex.h>
+#include <syscall.h>
+
 __thread uint16_t workerThreadId = 0;
 __thread int32_t tpcchistorycounter = 0;
 #include "tpcc/TPCCWorkload.hpp"
@@ -86,6 +89,16 @@ void yield(u64 counter)
    // _mm_pause();
 }
 
+int futex_wait(volatile int *addr, int val)
+{
+   return syscall(SYS_futex, addr, FUTEX_WAIT, val, NULL, NULL, 0);
+}
+
+int futex_wake(volatile int *addr, int val)
+{
+   return syscall(SYS_futex, addr, FUTEX_WAKE, val, NULL, NULL, 0);
+}
+
 struct PageState
 {
    std::mutex mtx;
@@ -108,20 +121,34 @@ struct PageState
 
    bool tryLockX(u64 oldStateAndVersion)
    {
-      std::unique_lock<std::mutex> lock(mtx);
-      while (getState() == Locked)
+      while (true)
       {
-         cv.wait(lock); // 等待解鎖通知
+         u64 currentState = getState();
+         if (currentState == Locked)
+         {
+            // Wait until the lock might be available again
+            if (stateAndVersion.load(std::memory_order_acquire) == oldStateAndVersion)
+            {
+               futex_wait(&stateAndVersion, oldStateAndVersion);
+            }
+         }
+         else
+         {
+            // Try to acquire the lock
+            if (stateAndVersion.compare_exchange_weak(oldStateAndVersion, sameVersion(oldStateAndVersion, Locked),
+                                                      std::memory_order_acquire, std::memory_order_relaxed))
+            {
+               return true;
+            }
+         }
       }
-      bool locked = stateAndVersion.compare_exchange_strong(oldStateAndVersion, sameVersion(oldStateAndVersion, Locked));
-      return locked;
    }
 
    void unlockX()
    {
-      std::lock_guard<std::mutex> guard(mtx);
-      stateAndVersion.store(nextVersion(stateAndVersion.load(), Unlocked), std::memory_order_release);
-      cv.notify_all(); // 通知所有等待的線程
+      u64 oldValue = stateAndVersion.load(std::memory_order_relaxed);
+      stateAndVersion.store(nextVersion(oldValue, Unlocked), std::memory_order_release);
+      futex_wake(&stateAndVersion, 1); // Wake up one waiting thread
    }
 
    void unlockXEvicted()
