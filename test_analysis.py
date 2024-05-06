@@ -15,14 +15,10 @@ def read_data(input_file,output_file):
                 tx_data.append(columns[1])
                 rmb_data.append(columns[2])
                 wmb_data.append(columns[3])
-    # 計算 data 平均值
-    # 取小數點後兩位
-    tx_data = list(map(int, tx_data))
-    rmb_data = list(map(int, rmb_data))
-    wmb_data = list(map(int, wmb_data))
-    # print("Average:", round(sum(data) / len(data), 2))
-
-    # print("Median:", median)
+    # 將字串轉換為浮點數
+    tx_data = list(map(float, tx_data))
+    rmb_data = list(map(float, rmb_data))
+    wmb_data = list(map(float, wmb_data))
     # 將平均值資料以添加方式寫入檔案，(tx, rmb, wmb)
     with open(output_file, 'a', encoding='utf-8') as file:
         file.write(str(round(sum(tx_data) / len(tx_data), 2)) + ',' + str(round(sum(rmb_data) / len(rmb_data), 2)) + ',' + str(round(sum(wmb_data) / len(wmb_data), 2)) + '\n')
@@ -35,5 +31,3 @@ if __name__ == '__main__':
         input_file = sys.argv[1]
         output_file = sys.argv[2]
         read_data(input_file,output_file)
-
-
