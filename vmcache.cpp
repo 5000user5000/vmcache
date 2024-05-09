@@ -141,129 +141,92 @@ struct PageState {
 };
 
 // open addressing hash table used for second chance replacement to keep track of currently-cached pages
-// struct ResidentPageSet {
-//    static const u64 empty = ~0ull;
-//    static const u64 tombstone = (~0ull)-1;
-
-//    struct Entry {
-//       atomic<u64> pid;
-//    };
-
-//    Entry* ht;
-//    u64 count;
-//    u64 mask;
-//    atomic<u64> clockPos;
-
-//    ResidentPageSet(u64 maxCount) : count(next_pow2(maxCount * 1.5)), mask(count - 1), clockPos(0) {
-//       ht = (Entry*)allocHuge(count * sizeof(Entry));
-//       memset((void*)ht, 0xFF, count * sizeof(Entry));
-//    }
-
-//    ~ResidentPageSet() {
-//       munmap(ht, count * sizeof(u64));
-//    }
-
-//    u64 next_pow2(u64 x) {
-//       return 1<<(64-__builtin_clzl(x-1));
-//    }
-
-//    u64 hash(u64 k) {
-//       const u64 m = 0xc6a4a7935bd1e995;
-//       const int r = 47;
-//       u64 h = 0x8445d61a4e774912 ^ (8*m);
-//       k *= m;
-//       k ^= k >> r;
-//       k *= m;
-//       h ^= k;
-//       h *= m;
-//       h ^= h >> r;
-//       h *= m;
-//       h ^= h >> r;
-//       return h;
-//    }
-
-   // void insert(u64 pid) {
-   //    u64 pos = hash(pid) & mask;
-   //    while (true) {
-   //       u64 curr = ht[pos].pid.load();
-   //       assert(curr != pid);
-   //       if ((curr == empty) || (curr == tombstone))
-   //          if (ht[pos].pid.compare_exchange_strong(curr, pid))
-   //             return;
-
-   //       pos = (pos + 1) & mask;
-   //    }
-   // }
-
-//    bool remove(u64 pid) {
-//       u64 pos = hash(pid) & mask;
-//       while (true) {
-//          u64 curr = ht[pos].pid.load();
-//          if (curr == empty)
-//             return false;
-
-//          if (curr == pid)
-//             if (ht[pos].pid.compare_exchange_strong(curr, tombstone))
-//                return true;
-
-//          pos = (pos + 1) & mask;
-//       }
-//    }
-
-//    template<class Fn>
-//    void iterateClockBatch(u64 batch, Fn fn) {
-//       u64 pos, newPos;
-//       do {
-//          pos = clockPos.load();
-//          newPos = (pos+batch) % count;
-//       } while (!clockPos.compare_exchange_strong(pos, newPos));
-
-//       for (u64 i=0; i<batch; i++) {
-//          u64 curr = ht[pos].pid.load();
-//          if ((curr != tombstone) && (curr != empty))
-//             fn(curr);
-//          pos = (pos + 1) & mask;
-//       }
-//    }
-// };
-
 struct ResidentPageSet {
    static const u64 bitmapSize = 4096;
-   vector<bitset<bitmapSize>> bitmap;  // Bitmap to manage page residency
-   vector<unique_ptr<mutex>> locks; // Using smart pointers for mutexes
+   static const u64 wordSize = 64; // size of atomic_uint64_t in bits
+   static const u64 wordsPerBitmap = bitmapSize / wordSize;
 
+   struct AtomicBitset {
+      /*********************
+      Example of How AtomicBitset Works
+      Imagine a bitmap designed to track the status of 128 pages, where each bit represents whether a page is in use (1) or not (0).
+
+      Total bits needed: 128
+      Words needed: 128 / 64 = 2 (since each word can handle 64 bits)
+      Let's set and test some bits:
+
+      1. Initialization: Two uint64_t elements are initialized to 0.
+      2. Setting a bit (e.g., bit 70):
+         Calculate the word index: 70 / 64 = 1 (second word)
+         Calculate the bit within the word: 70 % 64 = 6
+         Set the 6th bit of the second word.
+      3. Testing the bit (e.g., bit 70):
+         Same calculations as above.
+         Return true if the 6th bit of the second word is set, false otherwise.
+
+      Here's a visual after setting bit 70:
+
+      Word 0: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+      Word 1: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 01000000
+      *********************/
+
+      std::vector<std::atomic<uint64_t>> bits;
+      
+      AtomicBitset() : bits(wordsPerBitmap) {
+         for (auto& bit : bits) {
+               bit.store(0);
+         }
+      }
+      
+      void set(size_t idx) {
+         size_t wordIndex = idx / wordSize;
+         uint64_t bitMask = uint64_t(1) << (idx % wordSize);
+         uint64_t oldVal, newVal;
+         do {
+               oldVal = bits[wordIndex].load(std::memory_order_relaxed);
+               newVal = oldVal | bitMask;
+         } while (!bits[wordIndex].compare_exchange_weak(oldVal, newVal, std::memory_order_release, std::memory_order_relaxed));
+      }
+      
+      void reset(size_t idx) {
+         size_t wordIndex = idx / wordSize;
+         uint64_t bitMask = ~(uint64_t(1) << (idx % wordSize));
+         uint64_t oldVal, newVal;
+         do {
+               oldVal = bits[wordIndex].load(std::memory_order_relaxed);
+               newVal = oldVal & bitMask;
+         } while (!bits[wordIndex].compare_exchange_weak(oldVal, newVal, std::memory_order_release, std::memory_order_relaxed));
+      }
+      
+      bool test(size_t idx) const {
+         size_t wordIndex = idx / wordSize;
+         uint64_t bitMask = uint64_t(1) << (idx % wordSize);
+         return (bits[wordIndex].load(std::memory_order_acquire) & bitMask) != 0;
+      }
+   };
+
+   vector<AtomicBitset> bitmap;  // Atomic Bitmap to manage page residency
    size_t numPages;
 
    ResidentPageSet(size_t pageCount) : numPages(pageCount) {
       size_t numBits = (numPages + (bitmapSize-1)) / bitmapSize; // Calculate the required number of bitsets
       bitmap.resize(numBits);
-      locks.resize(numBits);
-      for (auto &lock : locks) {
-         lock = make_unique<mutex>(); // Allocate a new mutex for each element
-      }
    }
 
    ~ResidentPageSet() {
       bitmap.clear();
-      locks.clear();
    }
 
    void insert(u64 pid) {
       size_t index = pid / bitmapSize;
       size_t bit = pid % bitmapSize;
-
-      lock_guard<mutex> lock(*locks[index]);  // Ensure thread safety for this bitset
-
-      if (!bitmap[index].test(bit)) {
-         bitmap[index].set(bit);
-      }
+      
+      bitmap[index].set(bit);
    }
 
    bool remove(u64 pid) {
       size_t index = pid / bitmapSize;
       size_t bit = pid % bitmapSize;
-
-      lock_guard<mutex> lock(*locks[index]);  // Ensure thread safety for this bitset
 
       if (bitmap[index].test(bit)) {
          bitmap[index].reset(bit);
@@ -276,8 +239,6 @@ struct ResidentPageSet {
    void processPagesBatch(u64 batch, Fn fn) {
       size_t count = 0;
       for (size_t i = 0; i < bitmap.size() && count < batch; ++i) {
-         lock_guard<mutex> lock(*locks[i]);
-
          for (size_t j = 0; j < bitmapSize && count < batch; ++j) {
             PID pid = i * bitmapSize + j;
             if (bitmap[i].test(j)) {  // Only process if the page is in use
@@ -698,7 +659,7 @@ BufferManager::BufferManager() : virtSize(envOr("VIRTGB", 16)*gb), physSize(envO
       libaioInterface.emplace_back(LibaioInterface(blockfd, virtMem));
 
    physUsedCount = 0;
-   allocCount = 1; // pid (page id) 0 reserved for meta data
+   allocCount = 1; // pid 0 reserved for meta data
    readCount = 0;
    writeCount = 0;
    batch = envOr("BATCH", 64);
