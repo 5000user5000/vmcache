@@ -1,14 +1,16 @@
 #!/bin/bash
 
+# set timeout timer and ends all after timeout 
+timeout 30m bash test.sh
+
 # 定義輸出文件
 output_file="output.txt"
 result_rnd_file="result_rnd.txt"
 result_file="result.txt"
 
-# 定義參數的範圍和步長
 start=5
 end=85
-step=5
+step=20
 
 # 清空現有的輸出文件
 > "$result_rnd_file"
