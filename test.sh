@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # set timeout timer and ends all after timeout 
-timeout 30m bash test.sh
+timeout 1800 bash test.sh
 
 # 定義輸出文件
 output_file="output.txt"
