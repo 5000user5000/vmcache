@@ -18,6 +18,11 @@ def read_data(input_file,output_file):
                     wmb_data.append(columns[3])
                 except ValueError as e:
                     print(f"Error converting data: {e}, line: {line}")
+                    
+     # 將字串轉換為浮點數
+    tx_data = list(map(float, tx_data))
+    rmb_data = list(map(float, rmb_data))
+    wmb_data = list(map(float, wmb_data))
 
     # 將字串轉換為浮點數
     # Write averages to output file if data lists are not empty
@@ -29,7 +34,7 @@ def read_data(input_file,output_file):
             file.write(f"{tx_avg},{rmb_avg},{wmb_avg}\n")
     else:
         print("No valid data to process.")
-        
+
 if __name__ == '__main__':
     if len(sys.argv) < 3:
         print("Usage: python test.py input_file output_file")
