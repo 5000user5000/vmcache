@@ -140,68 +140,6 @@ struct PageState {
    void operator=(PageState&) = delete;
 };
 
-// struct ResidentPageSet {
-//    static const u64 bitmapSize = 4096;
-//    vector<bitset<bitmapSize>> bitmap;  // Bitmap to manage page residency
-//    vector<unique_ptr<mutex>> locks; // Using smart pointers for mutexes
-
-//    size_t numPages;
-
-//    ResidentPageSet(size_t pageCount) : numPages(pageCount) {
-//       size_t numBits = (numPages + (bitmapSize-1)) / bitmapSize; // Calculate the required number of bitsets
-//       bitmap.resize(numBits);
-//       locks.resize(numBits);
-//       for (auto &lock : locks) {
-//          lock = make_unique<mutex>(); // Allocate a new mutex for each element
-//       }
-//    }
-
-//    ~ResidentPageSet() {
-//       bitmap.clear();
-//       locks.clear();
-//    }
-
-//    void insert(u64 pid) {
-//       size_t index = pid / bitmapSize;
-//       size_t bit = pid % bitmapSize;
-
-//       lock_guard<mutex> lock(*locks[index]);  // Ensure thread safety for this bitset
-
-//       if (!bitmap[index].test(bit)) {
-//          bitmap[index].set(bit);
-//       }
-//    }
-
-//    bool remove(u64 pid) {
-//       size_t index = pid / bitmapSize;
-//       size_t bit = pid % bitmapSize;
-
-//       lock_guard<mutex> lock(*locks[index]);  // Ensure thread safety for this bitset
-
-//       if (bitmap[index].test(bit)) {
-//          bitmap[index].reset(bit);
-//          return true;
-//       }
-//       return false;
-//    }
-
-//    template<class Fn>
-//    void processPagesBatch(u64 batch, Fn fn) {
-//       size_t count = 0;
-//       for (size_t i = 0; i < bitmap.size() && count < batch; ++i) {
-//          lock_guard<mutex> lock(*locks[i]);
-
-//          for (size_t j = 0; j < bitmapSize && count < batch; ++j) {
-//             PID pid = i * bitmapSize + j;
-//             if (bitmap[i].test(j)) {  // Only process if the page is in use
-//                   fn(pid);
-//                   count++;
-//             }
-//          }
-//       }
-//    }
-// };
-
 // open addressing hash table used for second chance replacement to keep track of currently-cached pages
 struct ResidentPageSet {
    static const u64 bitmapSize = 4096;
