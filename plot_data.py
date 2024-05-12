@@ -18,7 +18,7 @@ def plot_data(input_file_name, output_file_name):
         plt.title(f"{base_name}: {column}")
         plt.xlabel('Index')
         plt.ylabel(column)
-        plt.savefig(output_file_name)  # 儲存圖片
+        plt.savefig(f"{base_name}: {column}")  # 儲存圖片
         plt.close()
 
 if __name__ == '__main__':
