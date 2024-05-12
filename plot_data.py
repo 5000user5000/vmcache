@@ -4,7 +4,11 @@ import sys
 
 def plot_data(input_file_name, output_file_name):
     # 讀取數據
-    data = pd.read_csv(input_file_name, header=None, names=['tx', 'rmb', 'wmb'])
+    try:
+        data = pd.read_csv(input_file_name, header=None, names=['tx', 'rmb', 'wmb'], on_bad_lines='skip')
+    except Exception as e:
+        print(f"Failed to read the data file: {e}")
+        return
 
     # 為tx, rmb, wmb 繪圖
     for column in data.columns:
@@ -18,9 +22,9 @@ def plot_data(input_file_name, output_file_name):
         plt.close()
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
+    if len(sys.argv) < 3:
         print('argument: input_file_name output_file_name')
         sys.exit()
 
-    plot_data(sys.argv[0], sys.argv[1])
+    plot_data(sys.argv[1], sys.argv[2])
 
