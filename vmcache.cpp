@@ -204,7 +204,7 @@ struct ResidentPageSet {
       Word 1: 00000000 00000000 00000000 00000000 00000000 00000000 00000000 01000000
       *********************/
 
-      std::vector<std::atomic<uint64_t>> bits;
+      std::vector<std::atomic<u64>> bits;
       
       AtomicBitset() : bits(wordsPerBitmap) {
          for (auto& bit : bits) {
@@ -212,39 +212,40 @@ struct ResidentPageSet {
          }
       }
       
-      void set(size_t idx) {
-         size_t wordIndex = idx / wordSize;
-         uint64_t bitMask = uint64_t(1) << (idx % wordSize);
-         uint64_t oldVal, newVal;
+      void set(u64 idx) {
+         u64 wordIndex = idx / wordSize;
+         u64 bitMask = u64(1) << (idx % wordSize);
+         u64 oldVal, newVal;
          do {
                oldVal = bits[wordIndex].load(std::memory_order_relaxed);
                newVal = oldVal | bitMask;
          } while (!bits[wordIndex].compare_exchange_weak(oldVal, newVal, std::memory_order_release, std::memory_order_relaxed));
       }
       
-      void reset(size_t idx) {
-         size_t wordIndex = idx / wordSize;
-         uint64_t bitMask = ~(uint64_t(1) << (idx % wordSize));
-         uint64_t oldVal, newVal;
+      void reset(u64 idx) {
+         u64 wordIndex = idx / wordSize;
+         u64 bitMask = ~(u64(1) << (idx % wordSize));
+         u64 oldVal, newVal;
          do {
                oldVal = bits[wordIndex].load(std::memory_order_relaxed);
                newVal = oldVal & bitMask;
          } while (!bits[wordIndex].compare_exchange_weak(oldVal, newVal, std::memory_order_release, std::memory_order_relaxed));
       }
       
-      bool test(size_t idx) const {
-         size_t wordIndex = idx / wordSize;
-         uint64_t bitMask = uint64_t(1) << (idx % wordSize);
+      bool test(u64 idx) const {
+         u64 wordIndex = idx / wordSize;
+         u64 bitMask = u64(1) << (idx % wordSize);
          return (bits[wordIndex].load(std::memory_order_acquire) & bitMask) != 0;
       }
    };
 
    vector<AtomicBitset> bitmap;  // Atomic Bitmap to manage page residency
-   size_t numPages;
+   u64 numPages;
+   std::mutex bitmap_mutex;  // Global mutex to synchronize access during resizing
 
-   ResidentPageSet(size_t pageCount) : numPages(pageCount) {
-      size_t numBits = (numPages + (bitmapSize-1)) / bitmapSize; // Calculate the required number of bitsets
-      bitmap.resize(numBits);
+   ResidentPageSet(u64 pageCount) : numPages(pageCount) {
+      u64 numBits = (numPages + (bitmapSize-1)) / bitmapSize; // Calculate the required number of bitsets
+      bitmap.resize(numBits); // additional bitsets are created and stored in a vector to accommodate all pages
    }
 
    ~ResidentPageSet() {
@@ -252,15 +253,27 @@ struct ResidentPageSet {
    }
 
    void insert(u64 pid) {
-      size_t index = pid / bitmapSize;
-      size_t bit = pid % bitmapSize;
+      u64 index = pid / bitmapSize;
+      u64 bit = pid % bitmapSize;
+
+      // Check if the index is within the current range of bitmap
+      if (index >= bitmap.size()) {
+         std::lock_guard<std::mutex> lock(bitmap_mutex);  // Lock acquired here
+
+         // Resize the bitmap vector to fit the new index
+         bitmap.resize(index + 10);  // resize to accommodate the new index
+         // Initialize new elements
+         for (u64 i = (bitmap.size()-10); i < bitmap.size(); ++i) {
+               bitmap[i] = AtomicBitset(); // Initialize new bitset
+         }
+      }
       
       bitmap[index].set(bit);
    }
 
    bool remove(u64 pid) {
-      size_t index = pid / bitmapSize;
-      size_t bit = pid % bitmapSize;
+      u64 index = pid / bitmapSize;
+      u64 bit = pid % bitmapSize;
 
       if (bitmap[index].test(bit)) {
          bitmap[index].reset(bit);
@@ -271,15 +284,23 @@ struct ResidentPageSet {
 
    template<class Fn>
    void processPagesBatch(u64 batch, Fn fn) {
-      size_t count = 0;
-      for (size_t i = 0; i < bitmap.size() && count < batch; ++i) {
-         for (size_t j = 0; j < bitmapSize && count < batch; ++j) {
-            PID pid = i * bitmapSize + j;
-            if (bitmap[i].test(j)) {  // Only process if the page is in use
-                  fn(pid);
-                  count++;
-            }
+      static u64 pos = 0;  // Maintain position between calls, static to preserve state
+      u64 count = 0;
+
+      // Calculate the number of full entries in the bitmap
+      u64 fullEntries = bitmap.size() * bitmapSize;
+
+      while (count < batch) {
+         PID pid = pos;
+         u64 i = pos / bitmapSize; // Calculate bitmap entry
+         u64 j = pos % bitmapSize; // Calculate bit position within the entry
+
+         if (bitmap[i].test(j)) { // Only process if the page is in use
+            fn(pid);
+            count++;
          }
+
+         pos = (pos + 1) % fullEntries; // Move to the next position and wrap around
       }
    }
 };
@@ -763,7 +784,7 @@ BufferManager::BufferManager() : virtSize(envOr("VIRTGB", 16) * gb), physSize(en
       libaioInterface.emplace_back(LibaioInterface(blockfd, virtMem));
 
    physUsedCount = 0;
-   allocCount = 1; // pid (page id) 0 reserved for meta data
+   allocCount = 1; // pid 0 reserved for meta data
    readCount = 0;
    writeCount = 0;
    batch = envOr("BATCH", 64);
