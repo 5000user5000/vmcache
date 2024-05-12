@@ -1,23 +1,26 @@
 import matplotlib.pyplot as plt
 import pandas as pd
+import sys
 
-def plot_data(file_name, title):
+def plot_data(input_file_name, output_file_name):
     # 讀取數據
-    data = pd.read_csv(file_name, header=None, names=['tx', 'rmb', 'wmb'])
+    data = pd.read_csv(input_file_name, header=None, names=['tx', 'rmb', 'wmb'])
 
     # 為tx, rmb, wmb 繪圖
     for column in data.columns:
         plt.figure()
         plt.plot(data[column])
-        plt.title(f"{title}: {column}")
+        base_name = output_file_name.split('.')[0]
+        plt.title(f"{base_name}: {column}")
         plt.xlabel('Index')
         plt.ylabel(column)
-        plt.savefig(f"{title}_{column}.png")  # 儲存圖片
+        plt.savefig(output_file_name)  # 儲存圖片
         plt.close()
 
 if __name__ == '__main__':
-    # 繪製 r1.txt 的圖
-    plot_data('result_rnd.txt', 'Random Lookup')
+    if len(sys.argv) < 2:
+        print('argument: input_file_name output_file_name')
+        sys.exit()
 
-    # 繪製 r2.txt 的圖
-    plot_data('result.txt', 'TPC-C')
+    plot_data(sys.argv[0], sys.argv[1])
+

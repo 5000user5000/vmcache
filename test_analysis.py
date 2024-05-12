@@ -10,6 +10,7 @@ def read_data(input_file,output_file):
         next(file)  # 跳過第一行
         for line in file:
             columns = line.strip().split(',')
+            print(columns)  # Check what is actually read from the file
             if len(columns) > 1:  # 確保有第二個元素
                 try:
                     # print(columns[1])  # 輸出第二個元素
@@ -18,7 +19,7 @@ def read_data(input_file,output_file):
                     wmb_data.append(columns[3])
                 except ValueError as e:
                     print(f"Error converting data: {e}, line: {line}")
-                    
+
      # 將字串轉換為浮點數
     tx_data = list(map(float, tx_data))
     rmb_data = list(map(float, rmb_data))

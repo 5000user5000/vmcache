@@ -25,9 +25,12 @@ do
     echo "Waiting for operation to settle..."
     sleep 2  # Adds a 2-second delay to ensure file operations complete
     # 調用Python腳本處理數據
-    python test_analysis.py "$output_file" "$result_rnd_file"
+    python3 test_analysis.py "$output_file" "$result_rnd_file"
     echo "Completed RNDREAD for parameter: $i"
 done
+
+python3 plot_data.py "$result_rnd_file" "Random_Lookup.png"
+> "$output_file"
 
 echo "Starting standard tests..."
 for (( i=$start; i<=$end; i+=$step ))
@@ -35,9 +38,12 @@ do
     echo "Running standard program with parameter: $i"
     > "$output_file"
     sudo BLOCK=/dev/loop0 THREADS=4 DATASIZE=$i ./vmcache >> "$output_file"
+    echo "Waiting for operation to settle..."
     sleep 2  # Adds a delay
-    python test_analysis.py "$output_file" "$result_file"
+    python3 test_analysis.py "$output_file" "$result_file"
     echo "Completed standard test for parameter: $i"
 done
+
+python3 plot_data.py "$result_file" "TPCC.png"
 
 echo "程序執行完成，結果已保存到 $result_rnd_file 和 $result_file ！"
