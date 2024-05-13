@@ -112,20 +112,19 @@ struct PageState
 
    bool tryLockX(u64 oldStateAndVersion)
    {
-      // std::unique_lock<std::mutex> lock(mtx);
-      // while (getState() == Locked)
-      // {
-      //    cv.wait(lock); // 蝑?敺?閫??????????
-      // }
+      while (getState() == Locked)
+      {
+         cv.wait(lock); // 等待解鎖通知
+      }
       bool locked = stateAndVersion.compare_exchange_strong(oldStateAndVersion, sameVersion(oldStateAndVersion, Locked));
       return locked;
    }
 
    void unlockX()
    {
-      // std::lock_guard<std::mutex> guard(mtx);
+      std::lock_guard<std::mutex> guard(mtx);
       stateAndVersion.store(nextVersion(stateAndVersion.load(), Unlocked), std::memory_order_release);
-      cv.notify_all(); // ?????交?????蝑?敺????蝺?蝔?
+      cv.notify_all(); // 通知所有等待的線程
    }
 
    void unlockXEvicted()
