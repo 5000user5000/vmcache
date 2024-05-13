@@ -92,7 +92,7 @@ void yield(u64 counter)
 
 struct PageState
 {
-   // std::mutex mtx;
+   std::mutex mtx;
    std::condition_variable cv;
 
    atomic<u64> stateAndVersion;
@@ -112,6 +112,7 @@ struct PageState
 
    bool tryLockX(u64 oldStateAndVersion)
    {
+      std::unique_lock<std::mutex> lock(mtx);
       while (getState() == Locked)
       {
          cv.wait(lock); // 等待解鎖通知
