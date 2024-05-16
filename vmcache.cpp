@@ -1300,8 +1300,40 @@ struct BTreeNode : public BTreeNodeHeader
    bool mergeNodes(unsigned slotId, BTreeNode *parent, BTreeNode *right)
    {
       if (!isLeaf)
-         // TODO: implement inner merge
+      {
+         // 內部節點合併
+         assert(right->isInner());
+         assert(parent->isInner());
+         BTreeNode tmp(isLeaf);
+         tmp.setFences(getLowerFence(), right->getUpperFence());
+
+         unsigned leftGrow = (prefixLen - tmp.prefixLen) * count;
+         unsigned rightGrow = (right->prefixLen - tmp.prefixLen) * right->count;
+         unsigned spaceUpperBound =
+             spaceUsed + right->spaceUsed + (reinterpret_cast<u8 *>(slot + count + right->count) - ptr()) + leftGrow + rightGrow;
+
+         if (spaceUpperBound > pageSize)
+            return false;
+
+         // 將當前節點的內容拷貝到臨時節點
+         copyKeyValueRange(&tmp, 0, 0, count);
+         // 插入父節點中的分隔符作為第一個鍵
+         span<u8> separatorKey = {parent->getKey(slotId), parent->slot[slotId].keyLen};
+         span<u8> upperInnerNodePayload = {reinterpret_cast<u8 *>(&upperInnerNode), sizeof(PID)};
+         tmp.storeKeyValue(count, separatorKey, upperInnerNodePayload);
+         // 將右節點的內容拷貝到臨時節點
+         right->copyKeyValueRange(&tmp, count + 1, 0, right->count);
+
+         // 更新指向子節點的指針
+         tmp.upperInnerNode = right->upperInnerNode;
+
+         // 將合併的內容拷貝回當前節點
+         copyNode(this, &tmp);
+
+         // 刪除父節點中的分隔符
+         parent->removeSlot(slotId);
          return true;
+      }
 
       assert(right->isLeaf);
       assert(parent->isInner());
