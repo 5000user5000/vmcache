@@ -34,7 +34,7 @@ def plot_data(type, file_name, data_sizes, value1, value2, label1, label2):
 def main(plot_type, base_folder_path):
 
     # Get list of all text files in the mutex and ori folders
-    mutex_files = sorted(glob.glob(os.path.join(base_folder_path, 'mutex', 'dsize_*.txt')))
+    mutex_files = sorted(glob.glob(os.path.join(base_folder_path, 'bitmap', 'dsize_*.txt')))
     ori_files = sorted(glob.glob(os.path.join(base_folder_path, 'ori', 'dsize_*.txt')))
 
     # Dictionary to store the data from each file
@@ -75,9 +75,9 @@ def main(plot_type, base_folder_path):
         mutex_wmb_values.append(np.mean(mutex_wmb))
         ori_wmb_values.append(np.mean(ori_wmb))
 
-    plot_data(plot_type, 'tx', data_sizes, mutex_tx_values, ori_tx_values, label1='Mutex', label2='Original')
-    plot_data(plot_type, 'rmb', data_sizes, mutex_rmb_values, ori_rmb_values, label1='Mutex', label2='Original')
-    plot_data(plot_type, 'wmb', data_sizes, mutex_wmb_values, ori_wmb_values, label1='Mutex', label2='Original')
+    plot_data(plot_type, 'tx', data_sizes, mutex_tx_values, ori_tx_values, label1='Bitmap', label2='Original')
+    plot_data(plot_type, 'rmb', data_sizes, mutex_rmb_values, ori_rmb_values, label1='Bitmap', label2='Original')
+    plot_data(plot_type, 'wmb', data_sizes, mutex_wmb_values, ori_wmb_values, label1='Bitmap', label2='Original')
 
     
 
