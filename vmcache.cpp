@@ -86,15 +86,15 @@ void *allocHuge(size_t size)
 // use when lock is not free
 void yield(u64 counter)
 {
-   // _mm_pause();
+   _mm_pause();
 }
 
-int futex_wait(volatile int *addr, int val)
+long futex_wait(atomic<u64> *addr, u64 val)
 {
    return syscall(SYS_futex, addr, FUTEX_WAIT, val, NULL, NULL, 0);
 }
 
-int futex_wake(volatile int *addr, int val)
+long futex_wake(atomic<u64> *addr, int val)
 {
    return syscall(SYS_futex, addr, FUTEX_WAKE, val, NULL, NULL, 0);
 }
@@ -126,17 +126,19 @@ struct PageState
          u64 currentState = getState();
          if (currentState == Locked)
          {
-            // Wait until the lock might be available again
-            if (stateAndVersion.load(std::memory_order_acquire) == oldStateAndVersion)
+            // 自旋等待一定次数后进入阻塞等待
+            for (int i = 0; i < 100; ++i)
             {
-               futex_wait(&stateAndVersion, oldStateAndVersion);
+               if (stateAndVersion.load(std::memory_order_acquire) == oldStateAndVersion)
+               {
+                  _mm_pause(); // 使用 CPU 自旋等待
+               }
             }
+            futex_wait(&stateAndVersion, oldStateAndVersion);
          }
          else
          {
-            // Try to acquire the lock
-            if (stateAndVersion.compare_exchange_weak(oldStateAndVersion, sameVersion(oldStateAndVersion, Locked),
-                                                      std::memory_order_acquire, std::memory_order_relaxed))
+            if (stateAndVersion.compare_exchange_weak(oldStateAndVersion, sameVersion(oldStateAndVersion, Locked), std::memory_order_acquire, std::memory_order_relaxed))
             {
                return true;
             }
