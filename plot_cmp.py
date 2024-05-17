@@ -1,28 +1,88 @@
-import pandas as pd
+import os
+import glob
 import matplotlib.pyplot as plt
-import numpy as np 
+import numpy as np
 
-def plot_data(file1, file2, title, label1, label2):
-    # 讀取數據
-    data1 = pd.read_csv(file1, header=0)
-    data2 = pd.read_csv(file2, header=0)
+# Function to read data from a text file
+def read_data(file_path, skip_foot):
+    ts,tx,rmb,wmb,system,threads,datasize,workload,batch = np.genfromtxt(file_path, skip_header=3, skip_footer=skip_foot, delimiter=',', unpack=True)
+    return tx, rmb, wmb
 
-    x_ticks = np.linspace(5, 85, len(data1)) # 設定是取 data size 5~85的數據
-    # 為tx, rmb, wmb 繪圖
-    for column in ['tx', 'rmb', 'wmb']:
-        print(column)
+def plot_data(type, file_name, data_sizes, value1, value2, label1, label2):
+    # Plotting the data
+    plt.figure()
 
-        plt.figure()
-        plt.plot(x_ticks, data1[column], label=label1 ,color='blue')  # 繪製第一筆數據
-        plt.plot(x_ticks, data2[column], label=label2, color='red')  # 繪製第二筆數據，使用紅線
-        plt.title(f"{title}: {column}")
-        plt.xlabel('data size')
-        plt.ylabel(column)
-        plt.legend(title='Legend', loc='upper left')  # 加上圖標，並指定位置
-        
-        plt.savefig(f"./pic/{title}_{column}_comparison.png")  # 儲存圖片
-        plt.close()
+    plt.plot(data_sizes, value1, label=label1, color='blue')
+    plt.plot(data_sizes, value2, label=label2, color='red')
+
+    # Adding labels and title
+    plt.xlabel('data size')
+    plt.ylabel(file_name)
+    plt.title(type)
+    plt.legend()
+    plt.grid(True)
+
+    # Create output directory if it doesn't exist
+    output_dir = './pic'
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    plt.savefig(f"{output_dir}//{type}_{file_name}_comparison.png")
+    plt.close()
+
+
+def main(plot_type, base_folder_path):
+
+    # Get list of all text files in the mutex and ori folders
+    mutex_files = sorted(glob.glob(os.path.join(base_folder_path, 'mutex', 'dsize_*.txt')))
+    ori_files = sorted(glob.glob(os.path.join(base_folder_path, 'ori', 'dsize_*.txt')))
+
+    # Dictionary to store the data from each file
+    mutex_data = {}
+    ori_data = {}
+
+    # Read data from each mutex file
+    for file_path in mutex_files:
+        if plot_type=='rnd':
+            mutex_data[file_path] = read_data(file_path, skip_foot=0)
+        else:
+            mutex_data[file_path] = read_data(file_path, skip_foot=1)
+
+    # Read data from each ori file
+    for file_path in ori_files:
+        if plot_type=='rnd':
+            ori_data[file_path] = read_data(file_path, skip_foot=0)
+        else:
+            ori_data[file_path] = read_data(file_path, skip_foot=1)
+
+    # Extract data sizes from file names for x-axis
+    data_sizes = [int(os.path.basename(file).split('_')[1].split('.')[0]) for file in mutex_files]
+
+    mutex_tx_values, mutex_rmb_values, mutex_wmb_values = [], [], []
+    ori_tx_values, ori_rmb_values, ori_wmb_values =  [], [], []
+
+    for mutex_file, ori_file in zip(mutex_files, ori_files):
+
+        mutex_tx, mutex_rmb, mutex_wmb = mutex_data[mutex_file]
+        ori_tx, ori_rmb, ori_wmb = ori_data[ori_file]
+
+        mutex_tx_values.append(np.mean(mutex_tx))
+        ori_tx_values.append(np.mean(ori_tx))
+
+        mutex_rmb_values.append(np.mean(mutex_rmb))
+        ori_rmb_values.append(np.mean(ori_rmb))
+
+        mutex_wmb_values.append(np.mean(mutex_wmb))
+        ori_wmb_values.append(np.mean(ori_wmb))
+
+    plot_data(plot_type, 'tx', data_sizes, mutex_tx_values, ori_tx_values, label1='Mutex', label2='Original')
+    plot_data(plot_type, 'rmb', data_sizes, mutex_rmb_values, ori_rmb_values, label1='Mutex', label2='Original')
+    plot_data(plot_type, 'wmb', data_sizes, mutex_wmb_values, ori_wmb_values, label1='Mutex', label2='Original')
+
+    
 
 if __name__ == '__main__':
-    plot_data('./data/result_rnd_mutex.txt', './data/result_rnd_ori.txt', 'Random Lookup', 'Mutex', 'Original')
-    plot_data('./data/result_mutex.txt', './data/result_ori.txt', 'TPC-C', 'Mutex', 'Original')
+
+    main('tpcc', './data/tpcc/')
+
+    main('rnd', './data/rnd/')
