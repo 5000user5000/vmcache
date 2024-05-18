@@ -12,8 +12,8 @@ def plot_data(type, file_name, data_sizes, value1, value2, label1, label2):
     # Plotting the data
     plt.figure()
 
-    plt.plot(data_sizes, value1, label=label1, color='blue')
-    plt.plot(data_sizes, value2, label=label2, color='red')
+    plt.plot(data_sizes, value1, label=label1, color='blue', marker=".")
+    plt.plot(data_sizes, value2, label=label2, color='red', marker=".")
 
     # Adding labels and title
     plt.xlabel('data size')
@@ -27,7 +27,7 @@ def plot_data(type, file_name, data_sizes, value1, value2, label1, label2):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    plt.savefig(f"{output_dir}//{type}_{file_name}_comparison.png")
+    plt.savefig(f"{output_dir}/{type}_{file_name}_comparison.png")
     plt.close()
 
 
@@ -84,5 +84,4 @@ def main(plot_type, base_folder_path):
 if __name__ == '__main__':
 
     main('tpcc', './data/tpcc/')
-
     main('rnd', './data/rnd/')
