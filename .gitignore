@@ -1,3 +1,5 @@
 vmcache
 *~
 .vscode
+*.txt
+*.png
