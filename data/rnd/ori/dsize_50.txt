@@ -1,0 +1,33 @@
+vmcache blk:/dev/loop0 virtgb:16 physgb:4 exmap:0
+space: 9.53674e-05 GB 
+ts,tx,rmb,wmb,system,threads,datasize,workload,batch
+0,5938580,0,0,vmcache,4,50,rndread,64
+1,6593189,0,0,vmcache,4,50,rndread,64
+2,6588642,0,0,vmcache,4,50,rndread,64
+3,6670295,0,0,vmcache,4,50,rndread,64
+4,6792906,0,0,vmcache,4,50,rndread,64
+5,6661684,0,0,vmcache,4,50,rndread,64
+6,6642724,0,0,vmcache,4,50,rndread,64
+7,6468808,0,0,vmcache,4,50,rndread,64
+8,6693982,0,0,vmcache,4,50,rndread,64
+9,6607037,0,0,vmcache,4,50,rndread,64
+10,4843873,0,0,vmcache,4,50,rndread,64
+11,3816353,0,0,vmcache,4,50,rndread,64
+12,4305633,0,0,vmcache,4,50,rndread,64
+13,4368728,0,0,vmcache,4,50,rndread,64
+14,6521447,0,0,vmcache,4,50,rndread,64
+15,6600256,0,0,vmcache,4,50,rndread,64
+16,6502912,0,0,vmcache,4,50,rndread,64
+17,6783502,0,0,vmcache,4,50,rndread,64
+18,6669651,0,0,vmcache,4,50,rndread,64
+19,6601572,0,0,vmcache,4,50,rndread,64
+20,6757474,0,0,vmcache,4,50,rndread,64
+21,6636827,0,0,vmcache,4,50,rndread,64
+22,6711028,0,0,vmcache,4,50,rndread,64
+23,5620008,0,0,vmcache,4,50,rndread,64
+24,3607303,0,0,vmcache,4,50,rndread,64
+25,3570504,0,0,vmcache,4,50,rndread,64
+26,3586871,0,0,vmcache,4,50,rndread,64
+27,3535512,0,0,vmcache,4,50,rndread,64
+28,3774678,0,0,vmcache,4,50,rndread,64
+29,3921649,0,0,vmcache,4,50,rndread,64

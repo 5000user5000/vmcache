@@ -84,5 +84,4 @@ def main(plot_type, base_folder_path):
 if __name__ == '__main__':
 
     main('tpcc', './data/tpcc/')
-
     main('rnd', './data/rnd/')

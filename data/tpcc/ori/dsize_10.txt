@@ -1,0 +1,34 @@
+vmcache blk:/dev/loop0 virtgb:16 physgb:4 exmap:0
+space: 1.98079 GB 
+ts,tx,rmb,wmb,system,threads,datasize,workload,batch
+0,42141,0,0,vmcache,4,10,tpcc,64
+1,31283,0,0,vmcache,4,10,tpcc,64
+2,30175,0,0,vmcache,4,10,tpcc,64
+3,17545,0,0,vmcache,4,10,tpcc,64
+4,13655,0,0,vmcache,4,10,tpcc,64
+5,16767,0,0,vmcache,4,10,tpcc,64
+6,17642,0,0,vmcache,4,10,tpcc,64
+7,24114,0,0,vmcache,4,10,tpcc,64
+8,31737,0,0,vmcache,4,10,tpcc,64
+9,32021,0,0,vmcache,4,10,tpcc,64
+10,32741,0,0,vmcache,4,10,tpcc,64
+11,32610,0,0,vmcache,4,10,tpcc,64
+12,34843,0,0,vmcache,4,10,tpcc,64
+13,34320,0,0,vmcache,4,10,tpcc,64
+14,34333,0,0,vmcache,4,10,tpcc,64
+15,32095,0,0,vmcache,4,10,tpcc,64
+16,34101,0,0,vmcache,4,10,tpcc,64
+17,27929,0,0,vmcache,4,10,tpcc,64
+18,16113,0,0,vmcache,4,10,tpcc,64
+19,18753,0,0,vmcache,4,10,tpcc,64
+20,19369,0,0,vmcache,4,10,tpcc,64
+21,26582,0,0,vmcache,4,10,tpcc,64
+22,35190,0,0,vmcache,4,10,tpcc,64
+23,34003,0,0,vmcache,4,10,tpcc,64
+24,34343,0,0,vmcache,4,10,tpcc,64
+25,33728,0,0,vmcache,4,10,tpcc,64
+26,34582,0,0,vmcache,4,10,tpcc,64
+27,33365,0,0,vmcache,4,10,tpcc,64
+28,32915,0,0,vmcache,4,10,tpcc,64
+29,33497,0,0,vmcache,4,10,tpcc,64
+space: 2.7438 GB 
