@@ -35,4 +35,4 @@ do
     python test_analysis.py "$output_file" "$result_file"
 done
 
-echo "程序執行完成，結果已保存到 $result_rnd_file 和 $result_file ！"
+echo " Program done，result is saved to  $result_rnd_file and $result_file ！"
