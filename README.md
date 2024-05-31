@@ -6,8 +6,12 @@ For a detailed introduction, please refer to the original author's code [vmcache
 
 vmcache is an implementation of an efficient buffer manager and B-tree data structure designed for managing and accessing large-scale data. The programs in the `./src` directory are based on the original version but have been modified in various ways to enhance the performance of vmcache. The modifications include bitmap, futex, merge, mutex, and yopt approaches. Besides completing the author's TODOs, the aim is to improve the overall efficiency of vmcache.
 
+Contributions: bitmap by **TENG, YA-WEN** , mutex_opt by **WU, CHI-CHIA** , mutex + futex + merge + yopt by **CHOU,CHE-WEI**.
+
 - **bitmap**: Implements free space management for storage.
-- **futex** and **mutex**: Handle mutual exclusion locks.
+- **mutex** : Handle mutual exclusion locks.
+- **mutex_opt** : Optimizes mutual exclusion locks using `lock_guard` , `unique_lock`, and finer-grained locking mechanisms for better performance and reduced contention.
+- **futex** : Utilizes fast userspace mutexes to minimize lock overhead and improve efficiency
 - **merge**: Completes the unfinished B-tree inner node merge by the original author.
 - **yopt**: Dynamically adjusts the waiting strategy of the original spinlock based on the duration.
 
