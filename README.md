@@ -49,17 +49,19 @@ The code is executed using Google Colab. For detailed instructions, please refer
 ```
                  tx        rmb        wmb
 Mutex     -2.639638       NaN        NaN
+Mutex-Opt  5.258519       NaN        NaN
 Merge     -2.350825       NaN        NaN
 Futex      6.683135       NaN        NaN
 Yield-Opt  3.078284       NaN        NaN
 Bitmap     0.302605       NaN        NaN
 ```
 
-- **Mutex**: Shows a decrease in transaction rate by approximately 2.64%.
-- **Merge**: Shows a decrease in transaction rate by approximately 2.35%.
-- **Futex**: Shows an increase in transaction rate by approximately 6.68%.
-- **Yield-Opt**: Shows an increase in transaction rate by approximately 3.08%.
-- **Bitmap**: Shows a marginal increase in transaction rate by approximately 0.30%.
+- **Mutex**: Decrease in transaction rate by approximately 2.64%.
+- **Mutex-Opt**: Increase in transaction rate by approximately 5.26%.
+- **Merge**: Decrease in transaction rate by approximately 2.35%.
+- **Futex**: Increase in transaction rate by approximately 6.68%.
+- **Yield-Opt**: Increase in transaction rate by approximately 3.08%.
+- **Bitmap**: Increase in transaction rate by approximately 0.30%.
 
 ### TPC-C Improvements
 
